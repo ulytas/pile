@@ -161,7 +161,7 @@
                 </tbody>
             </table>
             
-            <a href="/" class="generate-btn">Generate Another</a>
+            <a href="/" class="generate-btn">Generate </a>
         </div>
         
         <!-- Process log on the right -->
