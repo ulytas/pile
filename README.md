@@ -1,4 +1,5 @@
 # Network Topology and Routing Simulator
+[**Try it out! (Demo)**](https://pile.ulytas.com)
 
 ## Table of Contents
 
@@ -17,9 +18,9 @@
 ## Overview
 
 The **Network Topology and Routing Simulator Project** uses Laravel on Docker to generate a set number of nodes in a network topology. 
+
 ![alt text](images/prompt_example.png)
 ![Alt text](images/generated_example.png)
-
 
 ## Project Structure
 
@@ -130,6 +131,7 @@ docker compose -f compose.dev.yaml up -d
 5. Access the Application:
 
 Open your browser and navigate to [http://localhost](http://localhost).
+Make sure port 80 is not already used.
 
 ## Production Environment
 
@@ -139,12 +141,16 @@ The production environment is designed with security and efficiency in mind:
 - **Environment Variables Management**: Sensitive data such as passwords and API keys are managed carefully to prevent exposure.
 - **User Permissions**: Containers run under non-root users where possible to follow the principle of least privilege.
 - **Health Checks**: Implemented to monitor the status of services and ensure they are functioning correctly.
-- **HTTPS Setup**: While not included in this example, it's recommended to configure SSL certificates and use HTTPS in a production environment.
+- **HTTPS Setup**: It's recommended to configure SSL certificates and use HTTPS in a production environment.
+  ```bash
+  // Uncomment this line in routes/web.php
+  URL::forceScheme('https');
+  ```
 
 
 ### Deploying
 
-The production image can be deployed to any Docker-compatible hosting environment, such as AWS ECS, Kubernetes, or a traditional VPS.
+The production image can be deployed to any Docker-compatible hosting environment, such as Docker Desktop (Windows), AWS ECS, Kubernetes, or a traditional VPS.
 
 ## Technical Details
 
