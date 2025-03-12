@@ -136,6 +136,8 @@
                 <button id="next-btn" class="iteration-btn" disabled>Next &rarr;</button>
             </div>
             
+            <div id="graph-container" style="width: 100%; height: 400px; border: 1px solid #ddd;"></div>
+
             <table id="nodes-table">
                 <thead>
                     <tr>
@@ -160,8 +162,9 @@
                     @endforeach
                 </tbody>
             </table>
+
             
-            <a href="/" class="generate-btn">Generate Another</a>
+            <a href="/" class="generate-btn">Generate </a>
         </div>
         
         <!-- Process log on the right -->
@@ -186,95 +189,175 @@
             </div>
         </div>
     </div>
-
-    <script>
-        // Store all iteration states
-        const iterationStates = {
-            @foreach($iterationStates as $iteration => $state)
-                {{ $iteration }}: {!! $state !!},
-            @endforeach
-            {{ $iterations + 1 }}: {!! json_encode($nodes) !!} // Final state
-        };
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.0/cytoscape.min.js"></script>
+<script>
+    // Store all iteration states
+    const iterationStates = {
+        @foreach($iterationStates as $iteration => $state)
+            {{ $iteration }}: {!! $state !!},
+        @endforeach
+        {{ $iterations + 1 }}: {!! json_encode($nodes) !!} // Final state
+    };
+    
+    let currentIteration = {{ $iterations + 1 }}; // Start with final result
+    const maxIteration = {{ $iterations + 1 }};
+    
+    function updateTable(iteration) {
+        const tableBody = document.querySelector('#nodes-table tbody');
+        tableBody.innerHTML = '';
         
-        let currentIteration = {{ $iterations + 1 }}; // Start with final result
-        const maxIteration = {{ $iterations + 1 }};
+        const state = iterationStates[iteration];
         
-        function updateTable(iteration) {
-            const tableBody = document.querySelector('#nodes-table tbody');
-            tableBody.innerHTML = '';
+        for (const [label, node] of Object.entries(state)) {
+            const row = document.createElement('tr');
             
-            const state = iterationStates[iteration];
-            
-            for (const [label, node] of Object.entries(state)) {
-                const row = document.createElement('tr');
-                
-                if (node.priority) {
-                    const iterationNum = node.priority.charAt(0);
-                    row.classList.add(`iteration-${iterationNum}`);
-                }
-                
-                row.innerHTML = `
-                    <td>${node.label}</td>
-                    <td>${node.connections}</td>
-                    <td>${node.to_choose}</td>
-                    <td>${node.chosen_nodes}</td>
-                    <td>${node.final_combination}</td>
-                    <td>${node.priority || ''}</td>
-                `;
-                
-                tableBody.appendChild(row);
+            if (node.priority) {
+                const iterationNum = node.priority.charAt(0);
+                row.classList.add(`iteration-${iterationNum}`);
             }
+            
+            row.innerHTML = `
+                <td>${node.label}</td>
+                <td>${node.connections}</td>
+                <td>${node.to_choose}</td>
+                <td>${node.chosen_nodes}</td>
+                <td>${node.final_combination}</td>
+                <td>${node.priority || ''}</td>
+            `;
+            
+            tableBody.appendChild(row);
+        }
+    }
+    
+    function updateControls() {
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const display = document.getElementById('iteration-display');
+        
+        prevBtn.disabled = currentIteration <= 0;
+        nextBtn.disabled = currentIteration >= maxIteration;
+        
+        if (currentIteration === 0) {
+            display.textContent = 'Initial State';
+        } else if (currentIteration === maxIteration) {
+            display.textContent = 'Final Result';
+            document.getElementById('graph-container').style.display = 'block'; // Show the graph container for final result
+            generateGraph(); // Generate graph only at final iteration
+        } else {
+            display.textContent = `Iteration ${currentIteration}`;
+            document.getElementById('graph-container').style.display = 'none'; // Hide graph for other iterations
         }
         
-        function updateControls() {
-            const prevBtn = document.getElementById('prev-btn');
-            const nextBtn = document.getElementById('next-btn');
-            const display = document.getElementById('iteration-display');
-            
-            prevBtn.disabled = currentIteration <= 0;
-            nextBtn.disabled = currentIteration >= maxIteration;
-            
-            if (currentIteration === 0) {
-                display.textContent = 'Initial State';
-            } else if (currentIteration === maxIteration) {
-                display.textContent = 'Final Result';
-            } else {
-                display.textContent = `Iteration ${currentIteration}`;
-            }
-            
-            // Update active log entry
-            const logEntries = document.querySelectorAll('.log-entry');
-            logEntries.forEach(entry => entry.classList.remove('active'));
-            
-            if (currentIteration === maxIteration) {
-                logEntries[logEntries.length - 1].classList.add('active');
-            } else {
-                logEntries[currentIteration].classList.add('active');
-            }
+        // Update active log entry
+        const logEntries = document.querySelectorAll('.log-entry');
+        logEntries.forEach(entry => entry.classList.remove('active'));
+        
+        if (currentIteration === maxIteration) {
+            logEntries[logEntries.length - 1].classList.add('active');
+        } else {
+            logEntries[currentIteration].classList.add('active');
         }
-        
-        function showIteration(iteration) {
-            currentIteration = iteration;
-            updateTable(iteration);
-            updateControls();
-        }
-        
-        // Set up event listeners
-        document.getElementById('prev-btn').addEventListener('click', () => {
-            if (currentIteration > 0) {
-                showIteration(currentIteration - 1);
-            }
-        });
-        
-        document.getElementById('next-btn').addEventListener('click', () => {
-            if (currentIteration < maxIteration) {
-                showIteration(currentIteration + 1);
-            }
-        });
-        
-        // Initialize with final result
+    }
+    
+    function showIteration(iteration) {
+        currentIteration = iteration;
+        updateTable(iteration);
         updateControls();
-    </script>
+    }
+    
+    // Set up event listeners
+    document.getElementById('prev-btn').addEventListener('click', () => {
+        if (currentIteration > 0) {
+            showIteration(currentIteration - 1);
+        }
+    });
+    
+    document.getElementById('next-btn').addEventListener('click', () => {
+        if (currentIteration < maxIteration) {
+            showIteration(currentIteration + 1);
+        }
+    });
+
+    // Récupérer les données depuis Laravel
+    const nodes = @json($graphNodes);
+    const edges = @json($graphEdges);
+
+    // Initialiser Cytoscape.js uniquement à la combinaison finale
+  function generateGraph() {
+    const cy = cytoscape({
+        container: document.getElementById('graph-container'), // Le conteneur du graphe
+
+        elements: [
+            ...nodes,
+            ...edges
+        ],
+
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'background-color': '#0074D9',
+                    'label': 'data(label)',
+                    'color': '#fff',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'width': '30px',
+                    'height': '30px'
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 3,
+                    'line-color': '#ccc',
+                    'target-arrow-color': '#ccc',
+                    'target-arrow-shape': 'triangle'
+                }
+            }
+        ],
+
+        layout: {
+            name: 'grid', // Choisir un agencement de graphe
+            rows: 2
+        }
+    });
+
+    // Gestion du clic sur un nœud
+    cy.on('tap', 'node', function(event) {
+        const node = event.target;  // Le nœud cliqué
+        const connectedEdges = node.connectedEdges();  // Récupère toutes les arêtes connectées à ce nœud
+
+        // Change la couleur des arêtes connectées
+        connectedEdges.style({
+            'line-color': '#FF5733',  // Nouvelle couleur pour les arêtes
+            'target-arrow-color': '#FF5733',  // Change la couleur de la flèche des arêtes
+            'width': 4  // Épaisseur des arêtes
+        }).update();
+
+        // Change aussi la couleur du nœud cliqué pour le mettre en évidence
+        node.style({
+            'background-color': '#FF5733'  // Nouvelle couleur du nœud
+        }).update();
+
+        // Réinitialise les styles des autres nœuds et arêtes
+        cy.nodes().not(node).style({
+            'background-color': '#0074D9'  // Couleur d'origine du nœud
+        }).update();
+
+        cy.edges().not(connectedEdges).style({
+            'line-color': '#ccc',  // Couleur d'origine des arêtes
+            'target-arrow-color': '#ccc',
+            'width': 3  // Épaisseur d'origine des arêtes
+        }).update();
+    });
+}
+
+
+    // Initialize with final result
+    updateControls();
+</script>
+
 </body>
 </html>
+
 

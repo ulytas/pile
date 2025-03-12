@@ -16,7 +16,7 @@ class CombinationController extends Controller
         $request->validate([
             'node_count' => 'required|integer|min:1'
         ]);
-
+    
         $nodeCount = $request->input('node_count');
         
         // Calculate minimum and maximum total number of connections
@@ -169,7 +169,27 @@ class CombinationController extends Controller
             // Increment iteration counter
             $iteration++;
         }
-
+    
+        // Créer les données du graphe
+        $graphNodes = [];
+        $graphEdges = [];
+    
+        foreach ($nodes as $node) {
+            $graphNodes[] = [
+                'data' => ['id' => $node['label'], 'label' => $node['label']]
+            ];
+    
+            $chosenNodes = explode(',', rtrim($node['final_combination'], ','));
+    
+            foreach ($chosenNodes as $chosenNode) {
+                if ($chosenNode != $node['label']) {
+                    $graphEdges[] = [
+                        'data' => ['source' => $node['label'], 'target' => $chosenNode]
+                    ];
+                }
+            }
+        }
+    
         return view('combinations.result', [
             'nodes' => $nodes,
             'nodeCount' => $nodeCount,
@@ -178,8 +198,11 @@ class CombinationController extends Controller
             'totalConnections' => array_sum($validConnections),
             'processLog' => $processLog,
             'iterations' => $iteration - 1,
-            'iterationStates' => $iterationStates
+            'iterationStates' => $iterationStates,
+            'graphNodes' => $graphNodes, // Passer les nœuds au frontend
+            'graphEdges' => $graphEdges  // Passer les bords au frontend
         ]);
     }
+    
 }
 
