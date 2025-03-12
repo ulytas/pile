@@ -18,10 +18,12 @@
         .summary {
             flex: 1;
             min-width: 200px;
+            margin-bottom: 20px;
+        }
+        .summary-content {
             background-color: #e7f3fe;
             border-left: 6px solid #2196F3;
             padding: 15px;
-            margin-bottom: 20px;
         }
         .table-container {
             flex: 2;
@@ -137,41 +139,59 @@
         .github-link svg {
             fill: currentColor;
         }
+        .contact-link a {
+            color: #333;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .contact-link a:hover {
+            color: #0366d6;
+            text-decoration: underline;
+        }
+
+        .copyright svg {
+            margin-left: 8px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
     <h1>Node Combination Generator</h1>
-    
-    <div class="container">
+
+        <div class="container">
         <!-- Summary on the left -->
         <div class="summary">
             <h2>Summary</h2>
-            <p><strong>Number of nodes:</strong> {{ $nodeCount }}</p>
-            <p><strong>Minimum connections required:</strong> {{ $minConnections }}</p>
-            <p><strong>Maximum possible connections:</strong> {{ $maxConnections }}</p>
-            <p><strong>Total connections generated:</strong> {{ $totalConnections }} (valid: even and within range)</p>
-            <p><strong>Total iterations completed:</strong> {{ $iterations }}</p>
+            <div class="summary-content">
+                <p><strong>Number of nodes:</strong> {{ $nodeCount }}</p>
+                <p><strong>Minimum connections required:</strong> {{ $minConnections }}</p>
+                <p><strong>Maximum possible connections:</strong> {{ $maxConnections }}</p>
+                <p><strong>Total connections generated:</strong> {{ $totalConnections }}</p>
+                <p><strong>Total iterations completed:</strong> {{ $iterations }}</p>
+                <p><strong>Processing time:</strong> {{ $processingTime }} ms</p>
+            </div>
         </div>
-        
+
         <!-- Table in the center -->
         <div class="table-container">
             <h2>Node Configuration</h2>
-            
+
             <div class="iteration-controls">
                 <button id="prev-btn" class="iteration-btn" disabled>&larr; Previous</button>
-                <div id="iteration-display" class="iteration-display">Final Result</div>
+                <div id="iteration-display" class="iteration-display">Final State</div>
                 <button id="next-btn" class="iteration-btn" disabled>Next &rarr;</button>
             </div>
-            
+
             <table id="nodes-table">
                 <thead>
                     <tr>
-                        <th>Noeud</th>
-                        <th>Connexion (random)</th>
-                        <th>Noeud à choisir</th>
-                        <th>Noeuds choisis</th>
-                        <th>Combinaison finale</th>
-                        <th>Priorité</th>
+                        <th>Node</th>
+                        <th>Connection (random)</th>
+                        <th>Nodes available</th>
+                        <th>Nodes chosen</th>
+                        <th>Final combination</th>
+                        <th>Priority</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -187,10 +207,10 @@
                     @endforeach
                 </tbody>
             </table>
-            
+
             <a href="/" class="generate-btn">Generate Another</a>
         </div>
-        
+
         <!-- Process log on the right -->
         <div class="log">
             <h2>Process Log</h2>
@@ -199,7 +219,7 @@
             </div>
             @foreach($processLog as $log)
             <div class="log-entry iteration-{{ $log['iteration'] }}" onclick="showIteration({{ $log['iteration'] }})">
-                <p><strong>Iteration {{ $log['iteration'] }}:</strong> Selected node {{ $log['selected_node'] }} and connected with 
+                <p><strong>Iteration {{ $log['iteration'] }}:</strong> Selected node {{ $log['selected_node'] }} and connected with
                 @if(count($log['chosen_nodes']) > 0)
                     {{ implode(', ', $log['chosen_nodes']) }}
                 @else
@@ -209,13 +229,18 @@
             </div>
             @endforeach
             <div class="log-entry" onclick="showIteration({{ $iterations + 1 }})">
-                <p><strong>Final Result</strong></p>
+                <p><strong>Final State</strong></p>
             </div>
         </div>
     </div>
     <footer class="footer">
     <div class="footer-content">
-        <div class="copyright">© 2025 Network Topology Simulator</div>
+        <div class="copyright">
+            © 2025 Network Topology Simulator
+            <div class="contact-link">
+                <a href="mailto:contact@ulytas.com">Contact us</a>
+            </div>
+        </div>
         <div class="github-link">
             <a href="https://github.com/Ulytas/pile" target="_blank" rel="noopener noreferrer">
                 <svg height="24" width="24" viewBox="0 0 16 16" version="1.1">
@@ -234,24 +259,24 @@
             @endforeach
             {{ $iterations + 1 }}: {!! json_encode($nodes) !!} // Final state
         };
-        
+
         let currentIteration = {{ $iterations + 1 }}; // Start with final result
         const maxIteration = {{ $iterations + 1 }};
-        
+
         function updateTable(iteration) {
             const tableBody = document.querySelector('#nodes-table tbody');
             tableBody.innerHTML = '';
-            
+
             const state = iterationStates[iteration];
-            
+
             for (const [label, node] of Object.entries(state)) {
                 const row = document.createElement('tr');
-                
+
                 if (node.priority) {
                     const iterationNum = node.priority.charAt(0);
                     row.classList.add(`iteration-${iterationNum}`);
                 }
-                
+
                 row.innerHTML = `
                     <td>${node.label}</td>
                     <td>${node.connections}</td>
@@ -260,60 +285,85 @@
                     <td>${node.final_combination}</td>
                     <td>${node.priority || ''}</td>
                 `;
-                
+
                 tableBody.appendChild(row);
             }
         }
-        
+
         function updateControls() {
             const prevBtn = document.getElementById('prev-btn');
             const nextBtn = document.getElementById('next-btn');
             const display = document.getElementById('iteration-display');
-            
+
             prevBtn.disabled = currentIteration <= 0;
             nextBtn.disabled = currentIteration >= maxIteration;
-            
+
             if (currentIteration === 0) {
                 display.textContent = 'Initial State';
             } else if (currentIteration === maxIteration) {
-                display.textContent = 'Final Result';
+                display.textContent = 'Final State';
             } else {
                 display.textContent = `Iteration ${currentIteration}`;
             }
-            
+
             // Update active log entry
             const logEntries = document.querySelectorAll('.log-entry');
             logEntries.forEach(entry => entry.classList.remove('active'));
-            
+
             if (currentIteration === maxIteration) {
                 logEntries[logEntries.length - 1].classList.add('active');
             } else {
                 logEntries[currentIteration].classList.add('active');
             }
         }
-        
+
         function showIteration(iteration) {
             currentIteration = iteration;
             updateTable(iteration);
             updateControls();
+
+            // Update button visibility
+            const prevButton = document.getElementById('prev-btn');
+            const nextButton = document.getElementById('next-btn');
+
+            // Hide Previous button on Initial State (iteration 0)
+            if (iteration === 0) {
+                prevButton.style.visibility = 'hidden';
+            } else {
+                prevButton.style.visibility = 'visible';
+            }
+
+            // Hide Next button on Final Result (last iteration)
+            if (iteration === maxIteration) {
+                nextButton.style.visibility = 'hidden';
+            } else {
+                nextButton.style.visibility = 'visible';
+            }
         }
-        
+
         // Set up event listeners
         document.getElementById('prev-btn').addEventListener('click', () => {
             if (currentIteration > 0) {
                 showIteration(currentIteration - 1);
             }
         });
-        
+
         document.getElementById('next-btn').addEventListener('click', () => {
             if (currentIteration < maxIteration) {
                 showIteration(currentIteration + 1);
             }
         });
-        
+
         // Initialize with final result
-        updateControls();
+        showIteration(currentIteration);
+
+        // Log the connections data to console
+        document.addEventListener('DOMContentLoaded', function() {
+            const connectionsData = JSON.parse(document.getElementById('connections-data').dataset.connections);
+            console.log('Network Connections Data:', connectionsData);
+        });
     </script>
+    <div id="connections-data" data-connections="{{ $connectionsJson }}" style="display: none;"></div>
 </body>
 </html>
 
