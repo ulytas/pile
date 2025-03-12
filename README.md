@@ -17,6 +17,8 @@
 ## Overview
 
 The **Network Topology and Routing Simulator Project** uses Laravel on Docker to generate a set number of nodes in a network topology. 
+![alt text](images/prompt_example.png)
+![Alt text](images/generated_example.png)
 
 
 ## Project Structure
@@ -115,12 +117,14 @@ composer install
 npm install
 npm run dev
 php artisan key:generate
+php artisan migrate
+exit
 ```
 
-4. Run Migrations:
+4. Restart the containers:
 
 ```bash
-docker compose -f compose.dev.yaml exec workspace php artisan migrate
+docker compose -f compose.dev.yaml up -d
 ```
 
 5. Access the Application:
