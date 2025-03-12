@@ -109,11 +109,10 @@ Hint: adjust the `UID` and `GID` variables in the `.env` file to match your user
 docker compose -f compose.dev.yaml up -d
 ```
 
-3. Set right permissions if you use root or id 0 admin user
+3. Set the right permissions if you use root or id 0 admin user on Docker
 
 ```bash
 docker compose -f compose.dev.yaml exec -u root workspace bash -c "chown -R www:www /var/www"
-exit
 ```
 
 4 . Install Laravel Dependencies:
