@@ -109,26 +109,32 @@ Hint: adjust the `UID` and `GID` variables in the `.env` file to match your user
 docker compose -f compose.dev.yaml up -d
 ```
 
-3. Install Laravel Dependencies:
+3. Set right permissions if you use root or id 0 admin user
 
 ```bash
 docker compose -f compose.dev.yaml exec -u root workspace bash -c "chown -R www:www /var/www"
+exit
+```
+
+4 . Install Laravel Dependencies:
+
+```bash
 docker compose -f compose.dev.yaml exec workspace bash
 composer install
 npm install
-npm run dev
+npm audit fix --force
 php artisan key:generate
 php artisan migrate
 exit
 ```
 
-4. Restart the containers:
+5. Recreate and restart the containers:
 
 ```bash
 docker compose -f compose.dev.yaml up -d
 ```
 
-5. Access the Application:
+6. Access the Application:
 
 Open your browser and navigate to [http://localhost](http://localhost).
 Make sure port 80 is not already used.
