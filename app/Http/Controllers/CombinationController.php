@@ -203,6 +203,27 @@ class CombinationController extends Controller
             // Convert to JSON for easy parsing in JavaScript
             $connectionsJson = json_encode($connections);
 
+
+        // Créer les données du graphe
+        $graphNodes = [];
+        $graphEdges = [];
+
+        foreach ($nodes as $node) {
+            $graphNodes[] = [
+                'data' => ['id' => $node['label'], 'label' => $node['label']]
+            ];
+
+            $chosenNodes = explode(',', rtrim($node['final_combination'], ','));
+
+            foreach ($chosenNodes as $chosenNode) {
+                if ($chosenNode != $node['label']) {
+                    $graphEdges[] = [
+                        'data' => ['source' => $node['label'], 'target' => $chosenNode]
+                    ];
+                }
+            }
+        }
+
         return view('combinations.result', [
             'nodes' => $nodes,
             'nodeCount' => $nodeCount,
@@ -213,8 +234,9 @@ class CombinationController extends Controller
             'iterations' => $iteration - 1,
             'iterationStates' => $iterationStates,
             'processingTime' => $processingTime,
-            'connectionsJson' => $connectionsJson // debug in console log
+            'connectionsJson' => $connectionsJson, // debug in console log
+            'graphNodes' => $graphNodes, // Passer les nœuds au frontend
+            'graphEdges' => $graphEdges  // Passer les bords au frontend
         ]);
     }
 }
-
