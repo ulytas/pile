@@ -222,8 +222,7 @@ class CombinationController extends Controller
                     ];
                 }
             }
-        }
-
+        };
         return view('combinations.result', [
             'nodes' => $nodes,
             'nodeCount' => $nodeCount,

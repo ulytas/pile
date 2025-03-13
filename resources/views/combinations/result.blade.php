@@ -30,10 +30,52 @@
             min-width: 400px;
         }
         .log {
-            flex: 1;
-            min-width: 200px;
-            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        .log-title {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-top: 0; /* Remove the extra padding */
+            z-index: 5;
+        }
+        .log-entries {
             overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 500px; /* Adjust this value as needed */
+            padding-right: 10px; /* Add some padding to account for scrollbar */
+        }
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            cursor: pointer;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            width: 100%;
+        }
+        .log-entry {
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #ccc;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .log-entry:hover {
+            transform: translateX(5px);
+        }
+        /* Change color of selected iteration */
+        .log-entry.active {
+            border-left-width: 8px;
+            font-weight: bold;
+            /* background-color: #e0f7fa;
+            border-left: 4px solid #00bcd4; */
         }
         h1 {
             text-align: center;
@@ -56,7 +98,8 @@
         th {
             background-color: #f2f2f2;
         }
-        .generate-btn {
+        /* Old style not aligned with Title, top left corner */
+        /* .generate-btn {
             display: inline-block;
             margin: 20px 0;
             text-decoration: none;
@@ -70,20 +113,18 @@
             position: absolute;
             top: 20px;
             left: 20px;
-        }
-        .log-entry {
-            padding: 10px;
-            margin: 5px 0;
-            border-left: 4px solid #ccc;
+        } */
+        /* Aligned with Node Configuration */
+        .generate-btn {
+            display: inline-block;
+            text-decoration: none;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .log-entry:hover {
-            transform: translateX(5px);
-        }
-        .log-entry.active {
-            border-left-width: 8px;
-            font-weight: bold;
+            font-size: 0.9rem;
         }
         .iteration-1 { background-color: #ffffcc; }
         .iteration-2 { background-color: #e6ffe6; }
@@ -114,7 +155,7 @@
             border-radius: 4px;
             font-weight: bold;
         }
-        // footer style 2025 Network Topology Simulator Github
+        /* footer style 2025 Network Topology Simulator Github */
         .footer {
             margin-top: 40px;
             padding: 20px 0;
@@ -156,6 +197,19 @@
             margin-left: 8px;
             vertical-align: middle;
         }
+
+        #clear-history {
+            padding: 5px 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #clear-history:hover {
+            background-color: #d32f2f;
+        }
     </style>
 </head>
 <body>
@@ -164,7 +218,7 @@
         <div class="container">
         <!-- Summary on the left -->
         <div class="summary">
-            <h2>Summary</h2>
+        <h2>Summary</h2>
             <div class="summary-content">
                 <p><strong>Number of nodes:</strong> {{ $nodeCount }}</p>
                 <p><strong>Minimum connections required:</strong> {{ $minConnections }}</p>
@@ -174,12 +228,15 @@
                 <p><strong>Processing time:</strong> {{ $processingTime }} ms</p>
             </div>
 <p></p>
-            <h2>History</h2>
+<h2 style="display: flex; justify-content: space-between; align-items: center;">
+  History
+  <button id="clear-history" class="btn btn-sm btn-danger">Clear History</button>
+</h2>
             <div class="summary-content">
                 <p>This simulation was created on {{ date('F j, Y, g:i a') }}</p>
-                <p>Previous simulations: <span id="simulation-count">1</span></p>
+                <p>Previous simulations: <span id="simulation-count">0</span></p>
                 <div id="previous-simulations">
-                    <!-- This could be populated from localStorage or a database -->
+                    <!-- This will be populated from localStorage -->
                     <p>No previous simulations found</p>
                 </div>
             </div>
@@ -187,7 +244,10 @@
 
         <!-- Table in the center -->
         <div class="table-container">
-            <h2>Node Configuration</h2>
+        <h2 style="display: flex; justify-content: space-between; align-items: center;">
+            Node Configuration
+            <a href="/" class="generate-btn">Generate Another</a>
+        </h2>
 
             <div class="iteration-controls">
                 <button id="prev-btn" class="iteration-btn" disabled>&larr; Previous</button>
@@ -222,12 +282,13 @@
                 </tbody>
             </table>
 
-            <a href="/" class="generate-btn">Generate Another</a>
+            <!-- <a href="/" class="generate-btn">Generate Another</a> -->
         </div>
 
-        <!-- Process log on the right -->
-        <div class="log">
-            <h2>Process Log</h2>
+    <!-- Process log on the right -->
+    <div class="log">
+        <h2 class="log-title">Process Log</h2>
+        <div class="log-entries">
             <div class="log-entry" onclick="showIteration(0)">
                 <p><strong>Initial State</strong></p>
             </div>
@@ -246,6 +307,7 @@
                 <p><strong>Final State</strong></p>
             </div>
         </div>
+    </div>
     </div>
     <footer class="footer">
     <div class="footer-content">
@@ -558,6 +620,101 @@ function showIteration(iteration) {
             const connectionsData = JSON.parse(document.getElementById('connections-data').dataset.connections);
             console.log('Network Connections Data:', connectionsData);
         });
+
+
+// History management
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // Load simulation history from localStorage
+        let simulations = [];
+        try {
+            const stored = localStorage.getItem('simulations');
+            if (stored) {
+                simulations = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error("Error loading simulations from localStorage:", e);
+            simulations = [];
+        }
+
+        // Add current simulation to history
+        const currentSimulation = {
+            date: '{{ date('F j, Y, g:i a') }}',
+            nodeCount: {{ $nodeCount }},
+            connections: {{ $totalConnections }}
+        };
+
+        // Check if this is a new simulation (avoid duplicates on page refresh)
+        let isDuplicate = false;
+        if (simulations.length > 0) {
+            const latest = simulations[0];
+            isDuplicate = latest.date === currentSimulation.date &&
+                          latest.nodeCount === currentSimulation.nodeCount &&
+                          latest.connections === currentSimulation.connections;
+        }
+
+        if (!isDuplicate) {
+            // Add to beginning of array
+            simulations.unshift(currentSimulation);
+
+            // Keep only last 5 simulations
+            if (simulations.length > 5) {
+                simulations = simulations.slice(0, 5);
+            }
+
+            // Save back to localStorage
+            try {
+                localStorage.setItem('simulations', JSON.stringify(simulations));
+            } catch (e) {
+                console.error("Error saving simulations to localStorage:", e);
+            }
+        }
+
+        // Update the history section
+        updateHistoryDisplay(simulations);
+
+        // Add event listener for clear button
+        const clearBtn = document.getElementById('clear-history');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                try {
+                    localStorage.removeItem('simulations');
+                } catch (e) {
+                    console.error("Error clearing simulations from localStorage:", e);
+                }
+                updateHistoryDisplay([]);
+            });
+        }
+    } catch (e) {
+        console.error("Error in history management:", e);
+    }
+});
+
+function updateHistoryDisplay(simulations) {
+    try {
+        const simulationCount = document.getElementById('simulation-count');
+        const previousSimulations = document.getElementById('previous-simulations');
+
+        if (!simulationCount || !previousSimulations) return;
+
+        // Update count (excluding current simulation)
+        simulationCount.textContent = Math.max(0, simulations.length - 1);
+
+        if (simulations.length <= 1) {
+            previousSimulations.innerHTML = '<p>No previous simulations found</p>';
+        } else {
+            let historyHTML = '';
+            // Skip the first one (current simulation)
+            for (let i = 1; i < simulations.length; i++) {
+                const sim = simulations[i];
+                historyHTML += `<p>${sim.date}: ${sim.nodeCount} nodes, ${sim.connections} connections</p>`;
+            }
+            previousSimulations.innerHTML = historyHTML;
+        }
+    } catch (e) {
+        console.error("Error updating history display:", e);
+    }
+}
 
     </script>
     <div id="connections-data" data-connections="{{ $connectionsJson }}" style="display: none;"></div>
