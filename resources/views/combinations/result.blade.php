@@ -226,6 +226,7 @@
                 <p><strong>Total connections generated:</strong> {{ $totalConnections }}</p>
                 <p><strong>Total iterations completed:</strong> {{ $iterations }}</p>
                 <p><strong>Processing time:</strong> {{ $processingTime }} ms</p>
+                <p><strong>Regeneration attempts:</strong> {{ $regenerationAttempts }}</p>
             </div>
 <p></p>
 <h2 style="display: flex; justify-content: space-between; align-items: center;">
@@ -327,8 +328,12 @@
     </div>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.0/cytoscape.min.js"></script>
-
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.0/cytoscape.min.js"></script> -->
+Cytoscape.js
+<script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/layout-base/layout-base.js"></script>
+<script src="https://unpkg.com/cose-base/cose-base.js"></script>
+<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
     <script>
         // Store all iteration states
         const iterationStates = {
@@ -422,11 +427,60 @@ if (!document.querySelector('.graph-controls')) {
                 }
             }
         ],
-        layout: {
-            name: 'grid',
-            rows: 2,
-            padding: 30
-        }
+        // layout: {
+        //     name: 'grid',
+        //     rows: 2,
+        //     padding: 30
+        // }
+//         layout: {
+//   name: 'cose',
+//   idealEdgeLength: 100,
+//   nodeOverlap: 20,
+//   refresh: 20,
+//   fit: true,
+//   padding: 30,
+//   randomize: true,
+//   componentSpacing: 100,
+//   nodeRepulsion: 400000,
+//   edgeElasticity: 100,
+//   nestingFactor: 5,
+//   gravity: 80,
+//   numIter: 1000,
+//   initialTemp: 200,
+//   coolingFactor: 0.95,
+//   minTemp: 1.0
+// }
+layout: {
+    name: 'fcose',
+    // Quality settings
+    quality: "default",
+    randomize: true, // Equivalent to "Incremental" being checked
+    animate: false,
+    fit: true,
+    uniformNodeDimensions: false,
+    packComponents: true, // "Pack Components to Window"
+    tile: true, // "Tile Disconnected"
+
+    // Force parameters
+    nodeRepulsion: 4500,
+    idealEdgeLength: 50,
+    edgeElasticity: 0.45,
+    nestingFactor: 0.1,
+    gravity: 0.25,
+    gravityRange: 3.8,
+    gravityCompound: 1.0, // "Compound Gravity"
+    gravityRangeCompound: 1.5, // "Compound Gravity Range"
+
+    // Iterations
+    numIter: 2500,
+
+    // Tiling parameters
+    tilingPaddingVertical: 10,
+    tilingPaddingHorizontal: 10,
+
+    // Incremental layout settings
+    initialEnergyOnIncremental: 0.3 // "Incremental Cooling Factor"
+}
     });
 
     // Disable default zoom behavior

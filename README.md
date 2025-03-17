@@ -17,7 +17,7 @@
 
 ## Overview
 
-The **Network Topology and Routing Simulator Project** uses Laravel on Docker to generate a set number of nodes in a network topology. 
+The **Network Topology and Routing Simulator Project** uses Laravel on Docker to generate a set number of nodes in a network topology.
 
 ![alt text](images/prompt_example.png)
 ![Alt text](images/generated_example.png)
@@ -166,6 +166,10 @@ The production image can be deployed to any Docker-compatible hosting environmen
 - **Nginx**: Used as the web server to serve the Laravel application and handle HTTP requests.
 - **Docker Compose**: Orchestrates the services, simplifying the process of starting and stopping the environment.
 - **Health Checks**: Implemented in the Docker Compose configurations and Laravel application to ensure all services are operational.
+
+## Acknowledgements
+
+This project uses [**laravel-docker-examples**](https://github.com/dockersamples/laravel-docker-examples) and [**cytoscape-fcose**](https://github.com/iVis-at-Bilkent/cytoscape.js-fcose).
 
 ## License
 

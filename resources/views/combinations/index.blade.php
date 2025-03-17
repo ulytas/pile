@@ -77,12 +77,12 @@
     <form action="{{ route('generate.combination') }}" method="POST">
         @csrf
         <div>
-            <label for="node_count">Enter number of nodes (1-20):</label>
+            <label for="node_count">Enter number of nodes (3-20):</label>
             <div class="slider-container">
-                <input type="range" min="1" max="20" value="10" class="slider" id="node_range">
+                <input type="range" min="3" max="20" value="10" class="slider" id="node_range">
                 <div class="input-group">
                     <span>Value:</span>
-                    <input type="number" id="node_count" name="node_count" min="1" max="20" value="10" required>
+                    <input type="number" id="node_count" name="node_count" min="3" max="20" value="10" required>
                 </div>
             </div>
         </div>

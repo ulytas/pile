@@ -11,6 +11,58 @@ class CombinationController extends Controller
         return view('combinations.index');
     }
 
+    // Check multiple group
+    private function hasIsolatedGroups($nodes)
+    {
+        // Create an adjacency list representation of the graph
+        $graph = [];
+        $nodeLabels = array_keys($nodes);
+
+        foreach ($nodeLabels as $label) {
+            $graph[$label] = [];
+        }
+
+        // Populate the adjacency list based on final_combination
+        foreach ($nodes as $label => $node) {
+            $connections = explode(',', rtrim($node['final_combination'], ','));
+            foreach ($connections as $connection) {
+                if (!empty($connection) && $connection != $label) {
+                    $graph[$label][] = $connection;
+                }
+            }
+        }
+
+        // Perform BFS to check connectivity
+        $visited = [];
+        foreach ($nodeLabels as $label) {
+            $visited[$label] = false;
+        }
+
+        // Start BFS from the first node
+        $queue = [$nodeLabels[0]];
+        $visited[$nodeLabels[0]] = true;
+
+        while (!empty($queue)) {
+            $current = array_shift($queue);
+
+            foreach ($graph[$current] as $neighbor) {
+                if (!$visited[$neighbor]) {
+                    $visited[$neighbor] = true;
+                    $queue[] = $neighbor;
+                }
+            }
+        }
+
+        // Check if all nodes were visited
+        foreach ($visited as $isVisited) {
+            if (!$isVisited) {
+                return true; // Isolated groups exist
+            }
+        }
+
+        return false; // No isolated groups
+    }
+
     public function generate(Request $request)
     {
         $request->validate([
@@ -21,6 +73,21 @@ class CombinationController extends Controller
         $startTime = microtime(true);
 
         $nodeCount = $request->input('node_count');
+        $nodes = null;
+        $validConnections = null;
+        $iterationStates = null;
+        $processLog = null;
+        $iteration = null;
+
+        // Keep generating until we have a fully connected graph
+        $attempts = 0;
+        $maxAttempts = 10; // Limit the number of attempts to prevent infinite loops
+
+        do {
+            $attempts++;
+            // Reset variables for new attempt
+            $iterationStates = [];
+            $processLog = [];
 
         // Calculate minimum and maximum total number of connections
         $minConnections = 2 * ($nodeCount - 1);
@@ -58,13 +125,10 @@ class CombinationController extends Controller
         }
 
         // Save initial state
-        $iterationStates = [
-            0 => json_encode($nodes) // Initial state
-        ];
+        $iterationStates[0] = json_encode($nodes); // Initial state
 
         // Process all nodes in order of highest "to_choose" value
         $iteration = 1;
-        $processLog = [];
 
         while (true) {
             // Find node with highest "to_choose" value
@@ -182,6 +246,7 @@ class CombinationController extends Controller
             $iteration++;
         }
 
+        } while ($this->hasIsolatedGroups($nodes) && $attempts < $maxAttempts);
             // Calculate processing time
             $endTime = microtime(true);
             $processingTime = round(($endTime - $startTime) * 1000, 2); // Time in milliseconds
@@ -233,9 +298,10 @@ class CombinationController extends Controller
             'iterations' => $iteration - 1,
             'iterationStates' => $iterationStates,
             'processingTime' => $processingTime,
-            'connectionsJson' => $connectionsJson, // debug in console log
-            'graphNodes' => $graphNodes, // Passer les nœuds au frontend
-            'graphEdges' => $graphEdges  // Passer les bords au frontend
+            'connectionsJson' => $connectionsJson,
+            'graphNodes' => $graphNodes,
+            'graphEdges' => $graphEdges,
+            'regenerationAttempts' => $attempts
         ]);
     }
 }
