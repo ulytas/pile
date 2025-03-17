@@ -221,6 +221,7 @@
         <h2>Summary</h2>
             <div class="summary-content">
                 <p><strong>Number of nodes:</strong> {{ $nodeCount }}</p>
+                <p><strong>Network diameter:</strong> <span id="network-diameter">Calculating...</span></p>
                 <p><strong>Minimum connections required:</strong> {{ $minConnections }}</p>
                 <p><strong>Maximum possible connections:</strong> {{ $maxConnections }}</p>
                 <p><strong>Total connections generated:</strong> {{ $totalConnections }}</p>
@@ -335,6 +336,44 @@ Cytoscape.js
 <script src="https://unpkg.com/cose-base/cose-base.js"></script>
 <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
     <script>
+        // Calculer le diamètre du réseau et les nœuds les plus éloignés
+function calculateNetworkDiameter() {
+    let maxDistance = 0;
+    let farthestNodes = { source: null, target: null };
+
+    // Pour chaque paire de nœuds
+    cy.nodes().forEach(function(source) {
+        // Utiliser l'algorithme de Dijkstra pour calculer les plus courts chemins
+        const dijkstra = cy.elements().dijkstra({
+            root: source,
+            weight: function(edge) {
+                return 1; // Poids uniforme pour chaque arête
+            }
+        });
+
+        // Vérifier la distance à tous les autres nœuds
+        cy.nodes().forEach(function(target) {
+            if (source.id() !== target.id()) {
+                const path = dijkstra.pathTo(target);
+                // Le nombre de sauts est le nombre d'arêtes dans le chemin
+                const hops = path.edges().length;
+
+                if (hops > maxDistance) {
+                    maxDistance = hops;
+                    farthestNodes = {
+                        source: source,
+                        target: target
+                    };
+                }
+            }
+        });
+    });
+
+    return {
+        diameter: maxDistance,
+        farthestNodes: farthestNodes
+    };
+}
         // Store all iteration states
         const iterationStates = {
             @foreach($iterationStates as $iteration => $state)
@@ -378,6 +417,10 @@ const nodes = @json($graphNodes);
 const edges = @json($graphEdges);
 // Variable to track the currently highlighted node
 let highlightedNode = null;
+// Variables pour suivre les nœuds sélectionnés
+let firstNode = null;
+let secondNode = null;
+let highlightedPath = null;
 
 // Initialiser Cytoscape.js uniquement à la combinaison finale
 function generateGraph() {
@@ -513,57 +556,116 @@ layout: {
         URL.revokeObjectURL(url);
     });
 
-    // Gestion du clic sur un nœud
-    cy.on('tap', 'node', function(event) {
-        const node = event.target;  // Le nœud cliqué
+// Variables pour suivre les nœuds sélectionnés
+let firstNode = null;
+let secondNode = null;
+let highlightedPath = null;
 
-        // If clicking the same node that's already highlighted, reset everything
-        if (highlightedNode === node) {
-            // Reset all nodes to original color
-            cy.nodes().style({
-                'background-color': '#0074D9'  // Couleur d'origine du nœud
-            });
+// Remplacer votre gestionnaire d'événements actuel par celui-ci
+cy.on('tap', 'node', function(event) {
+    const node = event.target;  // Le nœud cliqué
 
-            // Reset all edges to original color
-            cy.edges().style({
-                'line-color': '#ccc',  // Couleur d'origine des arêtes
-                'target-arrow-color': '#ccc',
-                'width': 3  // Épaisseur d'origine des arêtes
-            });
+    // Premier cas: aucun nœud n'est sélectionné
+    if (firstNode === null) {
+        // Réinitialiser les couleurs des arêtes seulement
+        cy.edges().style({
+            'line-color': '#ccc',
+            'target-arrow-color': '#ccc',
+            'width': 3
+        });
 
-            // Clear the highlighted node reference
-            highlightedNode = null;
-        } else {
-            // Highlight the newly clicked node
-            const connectedEdges = node.connectedEdges();  // Récupère toutes les arêtes connectées à ce nœud
+        // Réinitialiser les couleurs des nœuds seulement
+        cy.nodes().style({
+            'background-color': '#0074D9'
+        });
 
-            // Change la couleur des arêtes connectées
-            connectedEdges.style({
-                'line-color': '#FF5733',  // Nouvelle couleur pour les arêtes
-                'target-arrow-color': '#FF5733',  // Change la couleur de la flèche des arêtes
-                'width': 4  // Épaisseur des arêtes
-            });
+        // Mettre en évidence le premier nœud en orange
+        node.style({
+            'background-color': '#FF5733'
+        });
 
-            // Change aussi la couleur du nœud cliqué pour le mettre en évidence
-            node.style({
-                'background-color': '#FF5733'  // Nouvelle couleur du nœud
-            });
+        // Mettre en évidence les connexions du premier nœud
+        const connectedEdges = node.connectedEdges();
+        connectedEdges.style({
+            'line-color': '#FF5733',
+            'target-arrow-color': '#FF5733',
+            'width': 4
+        });
 
-            // Réinitialise les styles des autres nœuds et arêtes
-            cy.nodes().not(node).style({
-                'background-color': '#0074D9'  // Couleur d'origine du nœud
-            });
+        firstNode = node;
+        secondNode = null;
+        highlightedPath = null;
+    }
+// Dans le cas où un deuxième nœud est sélectionné
+else if (firstNode !== null && secondNode === null && node !== firstNode) {
+    // Réinitialiser les styles des arêtes
+    cy.edges().style({
+        'line-color': '#ccc',
+        'target-arrow-color': '#ccc',
+        'width': 3
+    });
 
-            cy.edges().not(connectedEdges).style({
-                'line-color': '#ccc',  // Couleur d'origine des arêtes
-                'target-arrow-color': '#ccc',
-                'width': 3  // Épaisseur d'origine des arêtes
-            });
+    secondNode = node;
 
-            // Update the highlighted node reference
-            highlightedNode = node;
+    // Utiliser l'algorithme de Dijkstra pour trouver le chemin le plus court
+    const dijkstra = cy.elements().dijkstra({
+        root: firstNode,
+        weight: function(edge) {
+            return 1;  // Poids uniforme pour chaque arête
         }
     });
+
+    // Obtenir le chemin le plus court
+    const path = dijkstra.pathTo(secondNode);
+
+    // Mettre en évidence TOUTES les arêtes du chemin en vert
+    path.edges().style({
+        'line-color': '#4CAF50',  // Vert
+        'target-arrow-color': '#4CAF50',
+        'width': 4
+    });
+
+    // Mettre en évidence TOUS les nœuds du chemin en vert
+    path.nodes().style({
+        'background-color': '#4CAF50'  // Vert
+    });
+
+    highlightedPath = path;
+}
+
+    // Troisième cas: deux nœuds sont sélectionnés ou on clique sur le même nœud
+    else {
+        // Réinitialiser les couleurs des arêtes seulement
+        cy.edges().style({
+            'line-color': '#ccc',
+            'target-arrow-color': '#ccc',
+            'width': 3
+        });
+
+        // Réinitialiser les couleurs des nœuds seulement
+        cy.nodes().style({
+            'background-color': '#0074D9'
+        });
+
+        // Mettre en évidence le nouveau premier nœud en orange
+        node.style({
+            'background-color': '#FF5733'
+        });
+
+        // Mettre en évidence les connexions du nouveau premier nœud
+        const connectedEdges = node.connectedEdges();
+        connectedEdges.style({
+            'line-color': '#FF5733',
+            'target-arrow-color': '#FF5733',
+            'width': 4
+        });
+
+        firstNode = node;
+        secondNode = null;
+        highlightedPath = null;
+    }
+});
+
 
     // Add some CSS for the controls
     const style = document.createElement('style');
@@ -588,7 +690,23 @@ layout: {
     }
 `;
     document.head.appendChild(style);
+// Calculer le diamètre du réseau
+const networkInfo = calculateNetworkDiameter();
 
+// Mettre en évidence les nœuds les plus éloignés en rouge
+if (networkInfo.farthestNodes.source && networkInfo.farthestNodes.target) {
+    networkInfo.farthestNodes.source.style({
+        'background-color': '#FF0000'  // Rouge
+    });
+    networkInfo.farthestNodes.target.style({
+        'background-color': '#FF0000'  // Rouge
+    });
+}
+// Mettre à jour le summary
+const sourceLabel = networkInfo.farthestNodes.source.data('label');
+const targetLabel = networkInfo.farthestNodes.target.data('label');
+document.getElementById('network-diameter').textContent =
+    `${networkInfo.diameter} hops (from node ${sourceLabel} to ${targetLabel})`;
     return cy;
 }
 
